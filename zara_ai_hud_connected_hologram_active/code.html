@@ -1,0 +1,711 @@
+<!DOCTYPE html><html lang="en" rtrvr-gl-click="1" rtrvr-gl-keydown="1" rtrvr-gl-input="1" rtrvr-mw-ready="1" rtrvr-mw-busy="0" rtrvr-ls="0~hs,5~hs,6~hs,8~hs,9~hs,12~hs,13~hs,15~hs,23~hs,24~hs" style=""><head>
+<meta charset="utf-8">
+<meta content="width=device-width, initial-scale=1.0" name="viewport">
+<title>ZARA — MARK LIV | Cybernetic Assistant HUD</title>
+<!-- Tailwind CSS v3 -->
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<!-- Google Fonts for Tactical HUD Interface -->
+<link href="https://fonts.googleapis.com" rel="preconnect">
+<link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect">
+<link href="https://fonts.googleapis.com/css2?family=Share+Tech+Mono&amp;family=Orbitron:wght@400;600;800;900&amp;display=swap" rel="stylesheet">
+<script data-purpose="tailwind-config">
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: {
+            hud: {
+              cyan: '#00f3ff',
+              dim: '#007f8a',
+              dark: '#03141a',
+              amber: '#ffb000',
+              red: '#ff3366',
+              green: '#00ff88',
+              surface: '#020b10'
+            }
+          },
+          fontFamily: {
+            mono: ['"Share Tech Mono"', 'monospace'],
+            orbitron: ['"Orbitron"', 'sans-serif'],
+          }
+        }
+      }
+    };
+  </script>
+<style data-purpose="hud-scanlines-and-crt">
+    /* CRT Scanline & grid overlay background */
+    body {
+      background-color: #010609;
+      color: #00f3ff;
+      font-family: 'Share Tech Mono', monospace;
+      overflow: hidden;
+      user-select: none;
+    }
+
+    .hud-bg-grid {
+      background-image: 
+        radial-gradient(rgba(0, 243, 255, 0.08) 1px, transparent 1px),
+        linear-gradient(to right, rgba(0, 243, 255, 0.02) 1px, transparent 1px),
+        linear-gradient(to bottom, rgba(0, 243, 255, 0.02) 1px, transparent 1px);
+      background-size: 32px 32px, 32px 32px, 32px 32px;
+      background-position: 0 0, 0 0, 0 0;
+    }
+
+    .scanline {
+      position: absolute;
+      top: 0; left: 0; right: 0; bottom: 0;
+      background: linear-gradient(rgba(18, 16, 16, 0) 50%, rgba(0, 0, 0, 0.25) 50%);
+      background-size: 100% 4px;
+      pointer-events: none;
+      z-index: 50;
+      opacity: 0.7;
+    }
+
+    /* Glow utilities */
+    .glow-cyan {
+      text-shadow: 0 0 8px rgba(0, 243, 255, 0.8), 0 0 16px rgba(0, 243, 255, 0.4);
+    }
+    .glow-amber {
+      text-shadow: 0 0 8px rgba(255, 176, 0, 0.8), 0 0 14px rgba(255, 176, 0, 0.4);
+    }
+    .glow-red {
+      text-shadow: 0 0 8px rgba(255, 51, 102, 0.8);
+    }
+    .border-glow-cyan {
+      box-shadow: 0 0 10px rgba(0, 243, 255, 0.35), inset 0 0 8px rgba(0, 243, 255, 0.15);
+    }
+    .border-glow-amber {
+      box-shadow: 0 0 10px rgba(255, 176, 0, 0.4);
+    }
+    .border-glow-red {
+      box-shadow: 0 0 10px rgba(255, 51, 102, 0.3);
+    }
+
+    /* Custom tactical scrollbar */
+    ::-webkit-scrollbar {
+      width: 4px;
+    }
+    ::-webkit-scrollbar-track {
+      background: #010e14;
+    }
+    ::-webkit-scrollbar-thumb {
+      background: #00f3ff;
+      box-shadow: 0 0 6px #00f3ff;
+    }
+
+    /* Subtle HUD corner clips */
+    .hud-corner-box {
+      position: relative;
+    }
+    .hud-corner-box::before {
+      content: '';
+      position: absolute;
+      top: -2px; left: -2px;
+      width: 8px; height: 8px;
+      border-top: 2px solid #00f3ff;
+      border-left: 2px solid #00f3ff;
+    }
+    .hud-corner-box::after {
+      content: '';
+      position: absolute;
+      bottom: -2px; right: -2px;
+      width: 8px; height: 8px;
+      border-bottom: 2px solid #00f3ff;
+      border-right: 2px solid #00f3ff;
+    }
+
+    /* Pulsing reactor aura */
+    @keyframes pulseAura {
+      0%, 100% { opacity: 0.3; transform: scale(0.98); }
+      50% { opacity: 0.65; transform: scale(1.02); }
+    }
+    .pulse-glow {
+      animation: pulseAura 4s ease-in-out infinite;
+    }
+  </style>
+</head>
+<body class="w-screen h-screen flex flex-col justify-between hud-bg-grid relative select-none" rtrvr-ls="0~hs,5~hs,6~hs,8~hs,9~hs,12~hs,13~hs,15~hs,23~hs,24~hs">
+<!-- Scanline Overlay -->
+<div class="scanline"></div>
+<!-- BEGIN: WindowTitleBar -->
+<header class="w-full bg-[#01090e] border-b border-cyan-800/80 px-3 py-1.5 flex items-center justify-between z-30 text-xs tracking-wider" rtrvr-ls="0~hs,5~hs,6~hs,8~hs,9~hs,12~hs,13~hs,15~hs,23~hs,24~hs">
+<!-- Left Title with App ID -->
+<div class="flex items-center gap-3" rtrvr-ls="0~hs,5~hs,6~hs,8~hs,9~hs,12~hs,13~hs,15~hs,23~hs,24~hs">
+<div class="flex items-center gap-1.5 font-bold tracking-widest text-hud-cyan glow-cyan" rtrvr-ls="0~hs,5~hs,6~hs,8~hs,9~hs,12~hs,13~hs,15~hs,23~hs,24~hs">
+<span class="inline-block w-2.5 h-2.5 bg-hud-cyan animate-pulse shadow-[0_0_8px_#00f3ff]"></span>
+<span class="" rtrvr-ls="0~hs,5~hs,6~hs,8~hs,9~hs,12~hs,13~hs,15~hs,23~hs,24~hs" rtrvr-ro="42">ZARA — Rustam Ali</span>
+</div>
+<span class="border border-cyan-500/40 text-[10px] px-1.5 py-0.2 text-cyan-400" rtrvr-ls="5~hs,6~hs,8~hs,9~hs" rtrvr-ro="42">BUILD 54.88-REV2</span>
+</div>
+<!-- Center System Status -->
+<div class="flex flex-col items-center">
+<span class="font-orbitron font-extrabold text-sm tracking-widest text-hud-cyan glow-cyan">ZARA</span>
+<span class="text-[10px] tracking-widest text-cyan-400/80">A Friendly Assistant</span>
+</div>
+<!-- Right Window Controls & Live Clock -->
+<div class="flex items-center gap-4">
+<div class="text-right">
+<div class="font-bold text-sm tracking-widest text-hud-cyan glow-cyan" id="liveClock">02:04:19</div>
+<div class="text-[10px] text-cyan-400 uppercase tracking-widest" id="liveDate">SUN 27 SEP 2026</div>
+</div>
+<!-- Tactical Window Minimise, Maximise, Close buttons -->
+<div class="flex items-center gap-1 text-cyan-400">
+<button class="w-6 h-6 flex items-center justify-center border border-cyan-800 hover:border-cyan-400 hover:text-white transition-colors" id="btnMinimize" title="Minimize">
+<span class="">−</span>
+</button>
+<button class="w-6 h-6 flex items-center justify-center border border-cyan-800 hover:border-cyan-400 hover:text-white transition-colors" id="btnFullscreen" title="Toggle Fullscreen">
+<span class="text-[10px]">□</span>
+</button>
+<button class="w-6 h-6 flex items-center justify-center border border-red-900/80 hover:border-red-500 text-red-400 hover:text-red-200 transition-colors" id="btnCloseApp" title="Power Down">
+<span class="text-xs">×</span>
+</button>
+</div>
+</div>
+</header>
+<!-- END: WindowTitleBar -->
+<!-- BEGIN: MainInterfaceBody -->
+<main class="flex-1 w-full p-2.5 grid grid-cols-12 gap-3 overflow-hidden relative z-20" rtrvr-ls="0~hs,5~hs,6~hs,8~hs,9~hs,12~hs,13~hs,15~hs,23~hs">
+<!-- BEGIN: LeftTelemetryPanel -->
+<section class="col-span-3 flex flex-col justify-between space-y-2 h-full" rtrvr-ls="0~hs,5~hs,6~hs,8~hs,9~hs,12~hs,13~hs,15~hs,23~hs">
+<!-- System Monitor Box -->
+<div class="border border-hud-cyan/50 bg-[#020b10]/90 p-3 rounded-none relative border-glow-cyan hud-corner-box" rtrvr-ls="5~hs,6~hs,8~hs,9~hs">
+<!-- Panel Header -->
+<div class="flex items-center justify-between pb-2 border-b border-hud-cyan/30 mb-3" rtrvr-ls="5~hs,6~hs,8~hs,9~hs">
+<div class="flex items-center gap-1.5 text-xs text-hud-cyan glow-cyan font-semibold" rtrvr-ls="5~hs,6~hs,8~hs,9~hs" rtrvr-ro="42">
+<span class="text-cyan-400 text-sm">▸</span> SYS MONITOR
+          </div>
+<span class="text-[10px] text-hud-cyan/70 font-mono tracking-widest" rtrvr-ls="5~hs,6~hs,8~hs,9~hs" rtrvr-ro="42">DIAGNOSTIC-RUN</span>
+</div>
+<!-- Metric 1: CPU -->
+<div class="mb-3">
+<div class="flex justify-between text-xs mb-1">
+<span class="text-cyan-400">CPU</span>
+<span class="text-hud-amber font-bold glow-amber" id="valCpu">83%</span>
+</div>
+<div class="w-full h-1.5 bg-black/80 border border-hud-cyan/30">
+<div class="h-full bg-hud-amber transition-all duration-500 shadow-[0_0_8px_#ffb000]" id="barCpu" style="width: 83%;"></div>
+</div>
+</div>
+<!-- Metric 2: MEM -->
+<div class="mb-3">
+<div class="flex justify-between text-xs mb-1">
+<span class="text-cyan-400">MEM</span>
+<span class="text-hud-red font-bold glow-red" id="valMem">95%</span>
+</div>
+<div class="w-full h-1.5 bg-black/80 border border-hud-cyan/30">
+<div class="h-full bg-hud-red transition-all duration-500 shadow-[0_0_8px_#ff3366]" id="barMem" style="width: 95%"></div>
+</div>
+</div>
+<!-- Metric 3: NET -->
+<div class="mb-3 flex items-center justify-between border-t border-b border-hud-cyan/15 py-1.5">
+<span class="text-cyan-400 text-xs">NET</span>
+<span class="text-hud-cyan font-bold text-xs tracking-wider" id="valNet">3 KB/s</span>
+</div>
+<!-- Metric 4: GPU -->
+<div class="mb-3 flex items-center justify-between border-b border-hud-cyan/15 pb-1.5">
+<span class="text-cyan-400 text-xs">GPU</span>
+<span class="text-hud-amber font-bold text-xs">N/A</span>
+</div>
+<!-- Metric 5: TEMPERATURE -->
+<div class="mb-3">
+<div class="flex justify-between text-xs mb-1">
+<span class="text-cyan-400">TMP</span>
+<span class="text-hud-red font-bold glow-red" id="valTmp">25°C</span>
+</div>
+<div class="w-full h-1.5 bg-black/80 border border-hud-cyan/30">
+<div class="h-full bg-gradient-to-r from-cyan-400 to-hud-red w-[25%] shadow-[0_0_8px_#ff3366]"></div>
+</div>
+</div>
+<!-- System Stats Details -->
+<div class="pt-2 text-[11px] grid grid-cols-2 gap-y-1 text-cyan-300 font-mono">
+<div class="">UPTIME: <span class="text-hud-green font-bold" id="uptimeCounter">29:28</span></div>
+<div class="">PROC: <span class="text-hud-green font-bold">286</span></div>
+<div class="">OS: <span class="text-hud-amber font-bold">WIN</span></div>
+<div class="">SEC: <span class="text-hud-cyan font-bold">LVL-4</span></div>
+</div>
+</div>
+<!-- Quick Status Badges Bottom Left -->
+<div class="space-y-2 mt-auto" rtrvr-ls="0~hs,5~hs,6~hs,8~hs,9~hs,12~hs,13~hs,15~hs,23~hs">
+<div class="border border-hud-cyan/40 bg-[#020d13]/80 p-2 text-center text-xs tracking-widest text-hud-cyan font-bold shadow-[0_0_6px_rgba(0,243,255,0.2)]" rtrvr-ls="5~hs,6~hs,8~hs,9~hs,49~hs" rtrvr-ro="42">
+          [ AI CORE: <span class="text-hud-green animate-pulse">ACTIVE</span> ]
+        </div>
+<div class="border border-hud-cyan/40 bg-[#020d13]/80 p-2 text-center text-xs tracking-widest text-hud-cyan font-bold shadow-[0_0_6px_rgba(0,243,255,0.2)]" rtrvr-ls="5~hs,6~hs,8~hs,9~hs,49~hs" rtrvr-ro="42">
+          [ SEC: <span class="text-cyan-300">CLEARED</span> ]
+        </div>
+<div class="border border-hud-cyan/40 bg-[#020d13]/80 p-2 text-center text-xs tracking-widest text-hud-cyan font-bold shadow-[0_0_6px_rgba(0,243,255,0.2)]" rtrvr-ls="0~hs,5~hs,6~hs,8~hs,9~hs,12~hs,13~hs,15~hs,23~hs" rtrvr-ro="42">
+          [ PROTOCOL: <font color="#ffb000" rtrvr-ls="5~hs,6~hs,8~hs,9~hs,49~hs" rtrvr-ro="42">KWK Creatives</font>&nbsp;]
+        </div>
+</div>
+</section>
+<!-- END: LeftTelemetryPanel -->
+<!-- BEGIN: CentralViewportArea -->
+<section class="col-span-6 flex flex-col items-center justify-between relative overflow-hidden h-full" rtrvr-ls="5~hs,6~hs,8~hs,9~hs">
+<!-- Holographic Arc / Wireframe 3D Sphere Display Canvas -->
+<div class="relative w-full flex-1 flex flex-col items-center justify-center" rtrvr-ls="5~hs,6~hs,8~hs,9~hs,49~hs">
+<!-- Outer Ambient Glow -->
+<div class="absolute w-96 h-96 rounded-full bg-cyan-500/10 blur-3xl pulse-glow pointer-events-none"></div>
+<!-- Rotating Sci-Fi Targeting Reticles & Rings -->
+<div class="absolute w-88 h-88 rounded-full border border-dashed border-hud-cyan/40 animate-spin pointer-events-none" style="animation-duration: 35s;"></div>
+<div class="absolute w-96 h-96 rounded-full border border-dotted border-cyan-400/25 animate-spin pointer-events-none" style="animation-duration: 25s; animation-direction: reverse;"></div>
+<div class="absolute w-72 h-72 rounded-full border border-hud-cyan/20 animate-pulse pointer-events-none"></div>
+<!-- Hologram HUD Frame & Avatar Container -->
+<div class="relative z-10 w-72 h-72 rounded-full p-1.5 border border-hud-cyan bg-[#01090e]/80 shadow-[0_0_20px_rgba(0,243,255,0.4)] flex items-center justify-center overflow-hidden">
+<!-- Hologram Corner Accents -->
+<div class="absolute inset-0 border-2 border-hud-cyan/30 rounded-full pointer-events-none"></div>
+<!-- ZARA Holographic AI Avatar Image -->
+<img alt="ZARA Hologram Avatar" class="w-full h-full object-cover rounded-full filter contrast-125 brightness-110 drop-shadow-[0_0_12px_#00f3ff]" src="https://lh3.googleusercontent.com/aida-public/AB6AXuD15R4kWJBV5H2Zr_rRdXBXASaTCxSBVwXY3zTFFn75DJSUYJbOK62pV-N1dAfZuFzT5LcSL0mbJJDYQsIq75sr1DvdB8kSW1nsCEeJvVK7hsFbzFTJG0SGXySvuULvfAVX_2v3uXPf4AD7iqZFof_crtVPBLvfzrGdsnUFQixXKlp-YPnUJcQlJBD5KTH7UvxL8MU23am8W1GKFhRnLHsN8n-g_UWIwYI4yp3CZGxpl68Wm2bK9jUpqA">
+<!-- Holographic Overlay Scanline Tint -->
+<div class="absolute inset-0 bg-cyan-500/10 mix-blend-screen pointer-events-none"></div>
+</div>
+<!-- Holographic Telemetry Diagnostics Overlay Badges -->
+<div class="z-20 mt-3 flex items-center gap-2 flex-wrap justify-center font-mono text-[10px]">
+<span class="px-2 py-0.5 border border-hud-cyan/40 bg-[#020d13]/90 text-hud-cyan shadow-[0_0_6px_rgba(0,243,255,0.2)]" rtrvr-ls="49~hs" rtrvr-ro="42">
+      AI CONSCIOUSNESS: <span class="text-hud-green font-bold">99.8%</span>
+</span>
+<span class="px-2 py-0.5 border border-hud-cyan/40 bg-[#020d13]/90 text-hud-cyan shadow-[0_0_6px_rgba(0,243,255,0.2)]">
+      SYNAPTIC SYNC: <span class="text-hud-green font-bold">ESTABLISHED</span>
+</span>
+<span class="px-2 py-0.5 border border-hud-cyan/40 bg-[#020d13]/90 text-hud-cyan shadow-[0_0_6px_rgba(0,243,255,0.2)]">
+      MODE: <span class="text-hud-green font-bold animate-pulse">ACTIVE / LISTENING</span>
+</span>
+</div>
+<!-- Center Viewport Status HUD & Pulsing Frequency Waveform -->
+<div class="z-10 mt-2 flex flex-col items-center">
+<div class="text-xs font-bold tracking-[0.25em] text-hud-cyan glow-cyan mb-1 flex items-center gap-2" id="aiModeLabel">
+<span class="inline-block w-2.5 h-2.5 rounded-full bg-hud-green animate-ping shadow-[0_0_8px_#00ff88]"></span>
+<span class="">[ SYSTEM: LISTENING / ONLINE ]</span>
+</div>
+<!-- Animated Audio Waveform Frequency Visualizer -->
+<div class="flex items-center gap-1 h-6 px-4 py-1 border border-hud-cyan/40 bg-black/70 shadow-[0_0_8px_rgba(0,243,255,0.2)]" id="waveformBar">
+<span class="w-1 bg-hud-cyan h-3 animate-pulse"></span>
+<span class="w-1 bg-hud-cyan h-5 animate-pulse" style="animation-delay: 0.1s"></span>
+<span class="w-1 bg-hud-green h-2 animate-pulse" style="animation-delay: 0.2s"></span>
+<span class="w-1 bg-hud-cyan h-6 animate-pulse" style="animation-delay: 0.15s"></span>
+<span class="w-1 bg-hud-cyan h-4 animate-pulse" style="animation-delay: 0.3s"></span>
+<span class="w-1 bg-hud-green h-5 animate-pulse" style="animation-delay: 0.25s"></span>
+<span class="w-1 bg-hud-cyan h-6 animate-pulse" style="animation-delay: 0.05s"></span>
+<span class="w-1 bg-hud-cyan h-3 animate-pulse" style="animation-delay: 0.35s"></span>
+<span class="w-1 bg-hud-green h-5 animate-pulse" style="animation-delay: 0.12s"></span>
+<span class="w-1 bg-hud-cyan h-4 animate-pulse" style="animation-delay: 0.4s"></span>
+<span class="w-1 bg-hud-cyan h-6 animate-pulse" style="animation-delay: 0.22s"></span>
+<span class="w-1 bg-hud-cyan h-2 animate-pulse" style="animation-delay: 0.18s"></span>
+</div>
+</div>
+</div>
+<!-- BEGIN: CenterInitModal (Overlay modal matching screenshot) -->
+<!-- END: CenterInitModal -->
+<!-- Reopen Config Gear Button (Visible when modal collapsed) -->
+<div class="z-20 mb-2 flex items-center gap-3" rtrvr-ls="5~hs,6~hs,8~hs,9~hs"><div class="text-[11px] border border-hud-green/80 bg-green-950/20 px-3 py-1 text-hud-green flex items-center gap-1.5 shadow-[0_0_8px_rgba(0,255,136,0.3)] font-mono" rtrvr-ls="5~hs,6~hs,8~hs,9~hs" rtrvr-ro="42">
+<span class="">✓</span> API KEY: CONNECTED [AIzaSy...PROD]
+</div>
+<button class="text-xs border border-hud-cyan/30 px-3 py-1 bg-black/60 hover:border-hud-cyan text-cyan-400 hover:text-white transition-colors flex items-center gap-1.5" id="btnReopenConfig" rtrvr-ls="5~hs,6~hs,8~hs,9~hs" rtrvr-ro="38">
+<span class="">⚙</span> CONFIG MATRIX
+</button>
+<button class="text-xs border border-hud-cyan/30 px-3 py-1 bg-black/60 hover:border-hud-cyan text-hud-green hover:text-white transition-colors flex items-center gap-1.5 shadow-[0_0_6px_rgba(0,255,136,0.2)]" id="btnWakeZara" rtrvr-ls="5~hs,6~hs,8~hs,9~hs" rtrvr-ro="38">
+<span class="" rtrvr-ls="5~hs,6~hs,8~hs,9~hs" rtrvr-ro="42">⚡</span> AI SYNCHRONIZED
+</button></div>
+</section>
+<!-- END: CentralViewportArea -->
+<!-- BEGIN: RightPanelFeed -->
+<section class="col-span-3 flex flex-col justify-between space-y-2 h-full" rtrvr-ls="5~hs,6~hs,8~hs,9~hs">
+<!-- ACTIVITY LOG PANEL -->
+<div class="border border-hud-cyan/50 bg-[#020b10]/90 p-3 relative border-glow-cyan hud-corner-box flex-1 flex flex-col overflow-hidden max-h-[220px]">
+<div class="flex items-center justify-between pb-1.5 border-b border-hud-cyan/30 mb-2 text-xs text-hud-cyan glow-cyan font-semibold">
+<div class="flex items-center gap-1.5">
+<span class="">▸</span> ACTIVITY LOG
+          </div>
+<span class="text-[9px] text-cyan-500 uppercase">SYS-FEED</span>
+</div>
+<!-- Scrollable Log Lines with no mojibake encoding bugs -->
+<div class="flex-1 overflow-y-auto font-mono text-[11px] space-y-1.5 pr-1 leading-relaxed" id="activityLogContainer"><div class="text-hud-green font-bold">[AUTH]: Gemini API Key verified [VALID]</div>
+<div class="text-cyan-300">[CORE]: Neural handshake established with ZARA Core.</div>
+<div class="text-hud-cyan glow-cyan">[SYS]: Holographic matrix projected. ZARA online and listening.</div>
+<div class="text-cyan-400/80">[NET]: Mark LIV Protocol listening on port 8080.</div>
+<div class="text-hud-amber">[AUDIO]: Bi-directional neural voice channel open.</div></div>
+</div>
+<!-- FILE UPLOAD DROPZONE -->
+<div class="border border-hud-cyan/50 bg-[#020b10]/90 p-3 relative border-glow-cyan hud-corner-box">
+<div class="flex items-center justify-between pb-1.5 border-b border-hud-cyan/30 mb-2 text-xs text-hud-cyan glow-cyan font-semibold">
+<div class="flex items-center gap-1.5">
+<span class="">▸</span> FILE UPLOAD
+          </div>
+<span class="text-[9px] text-cyan-500">I/O DATA</span>
+</div>
+<div class="border border-dashed border-hud-cyan/60 hover:border-hud-cyan bg-cyan-950/10 hover:bg-cyan-950/30 p-3 text-center cursor-pointer transition-all duration-200" id="dropZone">
+<div class="text-cyan-400 text-xl mb-1">⇧</div>
+<p class="text-xs text-hud-cyan">Drop file here or <span class="underline">Click to Browse</span></p>
+<p class="text-[9px] text-cyan-500/80 mt-1">Images • Video • Audio • PDF • Docs • Code • Data</p>
+<input class="hidden" id="fileInputElem" type="file">
+</div>
+<div class="text-[10px] text-cyan-400/80 mt-1 text-center font-mono truncate" id="fileUploadStatus">
+          No file loaded — drop or click above to upload
+        </div>
+</div>
+<!-- COMMAND INPUT AND VOICE CONTROL -->
+<div class="border border-hud-cyan/50 bg-[#020b10]/90 p-2.5 relative border-glow-cyan hud-corner-box space-y-2" rtrvr-ls="5~hs,6~hs,8~hs,9~hs">
+<div class="text-xs text-hud-cyan glow-cyan font-semibold flex items-center justify-between pb-1 border-b border-hud-cyan/30" rtrvr-ls="5~hs,6~hs,8~hs,9~hs">
+<span class="">▸ COMMAND INPUT</span>
+<span class="text-[9px] text-hud-green tracking-widest animate-pulse">[READY]</span>
+</div>
+<!-- Terminal input prompt -->
+<div class="relative flex items-center" rtrvr-ls="5~hs,6~hs,8~hs,9~hs">
+<input class="w-full bg-[#01090e] border border-hud-cyan/70 text-hud-cyan text-xs px-2.5 py-1.5 pr-7 focus:outline-none focus:border-hud-cyan focus:ring-1 focus:ring-hud-cyan font-mono" id="commandInput" placeholder="Type a command or question..." type="text" rtrvr-ls="5~hs,6~hs,8~hs,9~hs" rtrvr-ro="42">
+<button class="absolute right-1 text-hud-cyan hover:text-white px-1 text-sm font-bold" id="btnSendCommand" title="Execute command">
+            ▸
+          </button>
+</div>
+<!-- Interrupt Button -->
+<button class="w-full py-1 border border-hud-red/80 bg-red-950/20 hover:bg-red-900/40 text-hud-red text-xs font-bold tracking-widest uppercase transition-all duration-150 flex items-center justify-center gap-1.5 shadow-[0_0_8px_rgba(255,51,102,0.3)]" id="btnInterrupt" rtrvr-ls="5~hs,6~hs,8~hs,9~hs" rtrvr-ro="38">
+<span class="" rtrvr-ls="5~hs,6~hs,8~hs,9~hs" rtrvr-ro="42">■</span> INTERRUPT [ESC]
+        </button>
+<!-- Voice Activation Microphone Button -->
+<button class="w-full py-1.5 border border-hud-green bg-green-950/30 hover:bg-hud-green hover:text-black text-hud-green text-xs font-bold tracking-widest uppercase transition-all duration-150 flex items-center justify-center gap-1.5 shadow-[0_0_10px_rgba(0,255,136,0.3)]" id="btnVoiceToggle" rtrvr-ls="5~hs,6~hs,8~hs,9~hs" rtrvr-ro="38">
+<span id="micIconIndicator" class="">🎙</span> MICROPHONE ACTIVE
+        </button>
+</div>
+</section>
+<!-- END: RightPanelFeed -->
+</main>
+<!-- END: MainInterfaceBody -->
+<!-- BEGIN: BottomStatusBarFooter -->
+<footer class="w-full bg-[#01090e] border-t border-cyan-800/80 px-4 py-1.5 flex items-center justify-between z-30 text-[11px] text-cyan-400 font-mono" rtrvr-ls="0~hs,5~hs,6~hs,8~hs,9~hs,12~hs,13~hs,15~hs,23~hs,24~hs,49~hs">
+<div class="flex items-center gap-4" rtrvr-ls="5~hs,6~hs,8~hs,9~hs">
+<span class="" rtrvr-ls="5~hs,6~hs,8~hs,9~hs" rtrvr-ro="42">[F4] Mute</span>
+<span class="">•</span>
+<span class="" rtrvr-ls="5~hs,6~hs,8~hs,9~hs" rtrvr-ro="42">[F11] Fullscreen</span>
+<span class="" rtrvr-ls="5~hs,6~hs,8~hs,9~hs" rtrvr-ro="42">•</span>
+<span class="text-hud-amber" rtrvr-ls="5~hs,6~hs,8~hs,9~hs" rtrvr-ro="42">LINK: NEURAL-CONNECTED</span>
+</div>
+<!-- Center Coordinate Simulation -->
+<div class="hidden md:flex items-center gap-3 text-[10px] text-cyan-500" rtrvr-ls="5~hs,6~hs,8~hs,9~hs">
+<span class="" rtrvr-ls="5~hs,6~hs,8~hs,9~hs,49~hs" rtrvr-ro="42">LAT: 40.7128° N</span>
+<span class="" rtrvr-ls="5~hs,6~hs,8~hs,9~hs" rtrvr-ro="42">LON: 74.0060° W</span>
+<span class="text-hud-cyan" rtrvr-ls="5~hs,6~hs,8~hs,9~hs" rtrvr-ro="42">ENCRYPT: SHA-512-LIVE</span>
+</div>
+<!-- Right Creator Credit -->
+<div class="text-right" rtrvr-ls="0~hs,5~hs,6~hs,8~hs,9~hs,12~hs,13~hs,15~hs,23~hs,24~hs">
+<span class="text-cyan-400 hover:text-hud-cyan cursor-pointer transition-colors" rtrvr-ls="0~hs,5~hs,6~hs,8~hs,9~hs,12~hs,13~hs,15~hs,23~hs,24~hs" rtrvr-ro="42">By Rustam Ali</span>
+</div>
+</footer>
+<!-- END: BottomStatusBarFooter -->
+<!-- BEGIN: LogicAndWireframeScripts -->
+<!-- Wireframe Sphere Visualizer Script -->
+<script data-purpose="neural-core-wireframe">
+    const canvas = document.getElementById('arcWireframeCanvas');
+    const ctx = canvas.getContext('2d');
+    let rotationX = 0;
+    let rotationY = 0;
+    let rotationZ = 0;
+    let sphereRadius = 88;
+    let isAwake = false;
+
+    // Generate latitude and longitude wireframe points
+    const linesCount = 14;
+    const pointsPerLine = 28;
+
+    function renderWireframe() {
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+      const cx = canvas.width / 2;
+      const cy = canvas.height / 2;
+
+      // Rotate rates (faster if awake)
+      const speed = isAwake ? 0.024 : 0.008;
+      rotationX += speed * 0.7;
+      rotationY += speed;
+      rotationZ += speed * 0.3;
+
+      ctx.save();
+      ctx.translate(cx, cy);
+
+      // Draw latitude circles
+      for (let i = 1; i < linesCount; i++) {
+        const phi = (Math.PI * i) / linesCount;
+        const r = sphereRadius * Math.sin(phi);
+        const y = sphereRadius * Math.cos(phi);
+
+        ctx.beginPath();
+        for (let j = 0; j <= pointsPerLine; j++) {
+          const theta = (2 * Math.PI * j) / pointsPerLine;
+          const x = r * Math.cos(theta);
+          const z = r * Math.sin(theta);
+
+          // 3D rotation projection
+          const rotY_x = x * Math.cos(rotationY) + z * Math.sin(rotationY);
+          const rotY_z = -x * Math.sin(rotationY) + z * Math.cos(rotationY);
+
+          const rotX_y = y * Math.cos(rotationX) - rotY_z * Math.sin(rotationX);
+          const rotX_z = y * Math.sin(rotationX) + rotY_z * Math.cos(rotationX);
+
+          // Perspective
+          const scale = 280 / (280 + rotX_z);
+          const px = rotY_x * scale;
+          const py = rotX_y * scale;
+
+          if (j === 0) {
+            ctx.moveTo(px, py);
+          } else {
+            ctx.lineTo(px, py);
+          }
+        }
+        ctx.strokeStyle = isAwake ? 'rgba(0, 243, 255, 0.45)' : 'rgba(0, 243, 255, 0.22)';
+        ctx.lineWidth = 1;
+        ctx.stroke();
+      }
+
+      // Draw Longitude circles
+      for (let i = 0; i < 6; i++) {
+        const theta = (Math.PI * i) / 6;
+        ctx.beginPath();
+        for (let j = 0; j <= pointsPerLine; j++) {
+          const phi = (2 * Math.PI * j) / pointsPerLine;
+          const x = sphereRadius * Math.sin(phi) * Math.cos(theta);
+          const y = sphereRadius * Math.cos(phi);
+          const z = sphereRadius * Math.sin(phi) * Math.sin(theta);
+
+          const rotY_x = x * Math.cos(rotationY) + z * Math.sin(rotationY);
+          const rotY_z = -x * Math.sin(rotationY) + z * Math.cos(rotationY);
+
+          const rotX_y = y * Math.cos(rotationX) - rotY_z * Math.sin(rotationX);
+          const rotX_z = y * Math.sin(rotationX) + rotY_z * Math.cos(rotationX);
+
+          const scale = 280 / (280 + rotX_z);
+          const px = rotY_x * scale;
+          const py = rotX_y * scale;
+
+          if (j === 0) {
+            ctx.moveTo(px, py);
+          } else {
+            ctx.lineTo(px, py);
+          }
+        }
+        ctx.strokeStyle = isAwake ? 'rgba(0, 243, 255, 0.55)' : 'rgba(0, 243, 255, 0.2)';
+        ctx.lineWidth = 1;
+        ctx.stroke();
+      }
+
+      // Draw inner glowing core
+      ctx.beginPath();
+      const coreR = isAwake ? 26 + Math.sin(Date.now() * 0.005) * 4 : 18;
+      ctx.arc(0, 0, coreR, 0, Math.PI * 2);
+      ctx.fillStyle = isAwake ? 'rgba(0, 243, 255, 0.35)' : 'rgba(0, 180, 220, 0.15)';
+      ctx.fill();
+      ctx.strokeStyle = '#00f3ff';
+      ctx.lineWidth = 1.5;
+      ctx.stroke();
+
+      ctx.restore();
+      requestAnimationFrame(renderWireframe);
+    }
+    renderWireframe();
+  </script>
+<!-- Interactive Controls & HUD Functionality -->
+<script data-purpose="hud-interactions">
+    // 1. Live Clock and Date
+    function updateClock() {
+      const now = new Date();
+      const hours = String(now.getHours()).padStart(2, '0');
+      const minutes = String(now.getMinutes()).padStart(2, '0');
+      const seconds = String(now.getSeconds()).padStart(2, '0');
+      document.getElementById('liveClock').textContent = `${hours}:${minutes}:${seconds}`;
+
+      const days = ['SUN', 'MON', 'TUE', 'WED', 'THU', 'FRI', 'SAT'];
+      const months = ['JAN', 'FEB', 'MAR', 'APR', 'MAY', 'JUN', 'JUL', 'AUG', 'SEP', 'OCT', 'NOV', 'DEC'];
+      const dayName = days[now.getDay()];
+      const dayDate = String(now.getDate()).padStart(2, '0');
+      const monthName = months[now.getMonth()];
+      const year = now.getFullYear();
+      document.getElementById('liveDate').textContent = `${dayName} ${dayDate} ${monthName} ${year}`;
+    }
+    setInterval(updateClock, 1000);
+    updateClock();
+
+    // 2. Simulated Telemetry Jitter
+    setInterval(() => {
+      const cpu = Math.floor(70 + Math.random() * 14);
+      document.getElementById('valCpu').textContent = `${cpu}%`;
+      document.getElementById('barCpu').style.width = `${cpu}%`;
+
+      const netSpeed = Math.floor(1 + Math.random() * 8);
+      document.getElementById('valNet').textContent = `${netSpeed} KB/s`;
+    }, 2400);
+
+    // 3. Log Appender Helper
+    const logBox = document.getElementById('activityLogContainer');
+    function addLog(type, message) {
+      const line = document.createElement('div');
+      const colors = {
+        SYS: 'text-cyan-300',
+        ERR: 'text-hud-red glow-red',
+        AUTH: 'text-hud-amber glow-amber',
+        SUCCESS: 'text-hud-green',
+        INFO: 'text-cyan-400'
+      };
+      line.className = colors[type] || 'text-cyan-300';
+      line.textContent = `[${type}]: ${message}`;
+      logBox.appendChild(line);
+      logBox.scrollTop = logBox.scrollHeight;
+    }
+
+    // 4. Modal Initialisation Sequence
+    const initModal = document.getElementById('initModal');
+    const initForm = document.getElementById('initForm');
+    const geminiInput = document.getElementById('geminiKeyInput');
+    const authErrorMsg = document.getElementById('authErrorMsg');
+    const aiModeLabel = document.getElementById('aiModeLabel');
+
+    initForm.addEventListener('submit', (e) => {
+      e.preventDefault();
+      const val = geminiInput.value.trim();
+      if (!val) {
+        authErrorMsg.classList.remove('hidden');
+        addLog('ERR', 'API Key must not be empty.');
+        return;
+      }
+      authErrorMsg.classList.add('hidden');
+      addLog('AUTH', 'Authenticating Mark LIV Neural Link...');
+
+      setTimeout(() => {
+        addLog('SUCCESS', 'Gemini Neural API verified. Access granted.');
+        addLog('SYS', 'ZARA core awakened. Audio & telemetry linked.');
+        
+        // Hide modal smoothly
+        initModal.classList.add('opacity-0', 'pointer-events-none');
+        isAwake = true;
+        aiModeLabel.innerHTML = `<span class="inline-block w-2 h-2 rounded-full bg-hud-green animate-ping"></span><span>[ SYSTEM: LISTENING / ACTIVE ]</span>`;
+      }, 700);
+    });
+
+    // Toggle Re-open config
+    document.getElementById('btnReopenConfig').addEventListener('click', () => {
+      initModal.classList.remove('opacity-0', 'pointer-events-none');
+      addLog('SYS', 'Configuration panel invoked.');
+    });
+
+    // Wake AI button toggle
+    document.getElementById('btnWakeZara').addEventListener('click', () => {
+      isAwake = !isAwake;
+      if (isAwake) {
+        aiModeLabel.innerHTML = `<span class="inline-block w-2 h-2 rounded-full bg-hud-green animate-ping"></span><span>[ SYSTEM: LISTENING / ACTIVE ]</span>`;
+        addLog('SYS', 'ZARA woke from low-power standby.');
+      } else {
+        aiModeLabel.innerHTML = `<span class="inline-block w-2 h-2 rounded-full bg-hud-amber animate-ping"></span><span>[ SYSTEM: SLEEPING / STANDBY ]</span>`;
+        addLog('SYS', 'ZARA switched to SLEEP mode.');
+      }
+    });
+
+    // API Key eye toggle mask
+    document.getElementById('btnToggleKeyMask').addEventListener('click', () => {
+      geminiInput.type = geminiInput.type === 'password' ? 'text' : 'password';
+    });
+
+    // OS selector buttons
+    const osButtons = document.querySelectorAll('.os-btn');
+    osButtons.forEach(btn => {
+      btn.addEventListener('click', () => {
+        osButtons.forEach(b => {
+          b.className = 'os-btn border border-hud-cyan/40 hover:border-hud-cyan bg-[#010c12] text-cyan-400 py-1.5 px-2 text-xs text-center transition-all';
+          b.innerHTML = b.getAttribute('data-os');
+        });
+        btn.className = 'os-btn border border-hud-cyan bg-hud-cyan text-black font-bold py-1.5 px-2 text-xs text-center transition-all flex items-center justify-center gap-1 shadow-[0_0_8px_#00f3ff]';
+        btn.innerHTML = `<span>&#10003;</span> ${btn.getAttribute('data-os')}`;
+        document.getElementById('osDetectedText').textContent = btn.getAttribute('data-os');
+        addLog('SYS', `Target environment preset set to ${btn.getAttribute('data-os')}`);
+      });
+    });
+
+    // 5. Command Input & Interrupt Execution
+    const cmdInput = document.getElementById('commandInput');
+    function executeCommand() {
+      const q = cmdInput.value.trim();
+      if (!q) return;
+      addLog('INFO', `User query: "${q}"`);
+      cmdInput.value = '';
+      setTimeout(() => {
+        addLog('SUCCESS', `ZARA: Query parsed. Mark LIV response synthesized.`);
+      }, 500);
+    }
+
+    document.getElementById('btnSendCommand').addEventListener('click', executeCommand);
+    cmdInput.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter') executeCommand();
+    });
+
+    // Interrupt button
+    const btnInterrupt = document.getElementById('btnInterrupt');
+    function triggerInterrupt() {
+      addLog('ERR', 'INTERRUPT SIGNAL RECEIVED. Halt pipeline.');
+      btnInterrupt.classList.add('bg-hud-red', 'text-white');
+      setTimeout(() => {
+        btnInterrupt.classList.remove('bg-hud-red', 'text-white');
+      }, 300);
+    }
+    btnInterrupt.addEventListener('click', triggerInterrupt);
+    window.addEventListener('keydown', (e) => {
+      if (e.key === 'Escape') triggerInterrupt();
+    });
+
+    // Voice button toggle
+    const btnVoice = document.getElementById('btnVoiceToggle');
+    let micActive = true;
+    btnVoice.addEventListener('click', () => {
+      micActive = !micActive;
+      if (micActive) {
+        btnVoice.className = 'w-full py-1.5 border border-hud-green bg-green-950/30 hover:bg-hud-green hover:text-black text-hud-green text-xs font-bold tracking-widest uppercase transition-all duration-150 flex items-center justify-center gap-1.5 shadow-[0_0_10px_rgba(0,255,136,0.3)]';
+        btnVoice.innerHTML = `<span>&#127897;</span> MICROPHONE ACTIVE`;
+        addLog('SYS', 'Audio input sensor unmuted.');
+      } else {
+        btnVoice.className = 'w-full py-1.5 border border-hud-red bg-red-950/30 text-hud-red text-xs font-bold tracking-widest uppercase transition-all duration-150 flex items-center justify-center gap-1.5';
+        btnVoice.innerHTML = `<span>&#128263;</span> MICROPHONE MUTED`;
+        addLog('SYS', 'Audio input sensor muted.');
+      }
+    });
+
+    // 6. File Upload Dropzone Handling
+    const dropZone = document.getElementById('dropZone');
+    const fileInput = document.getElementById('fileInputElem');
+    const uploadStatus = document.getElementById('fileUploadStatus');
+
+    dropZone.addEventListener('click', () => fileInput.click());
+    dropZone.addEventListener('dragover', (e) => {
+      e.preventDefault();
+      dropZone.classList.add('border-hud-cyan', 'bg-cyan-900/30');
+    });
+    dropZone.addEventListener('dragleave', () => {
+      dropZone.classList.remove('border-hud-cyan', 'bg-cyan-900/30');
+    });
+    dropZone.addEventListener('drop', (e) => {
+      e.preventDefault();
+      dropZone.classList.remove('border-hud-cyan', 'bg-cyan-900/30');
+      if (e.dataTransfer.files.length > 0) {
+        handleFile(e.dataTransfer.files[0]);
+      }
+    });
+    fileInput.addEventListener('change', (e) => {
+      if (e.target.files.length > 0) {
+        handleFile(e.target.files[0]);
+      }
+    });
+
+    function handleFile(file) {
+      uploadStatus.textContent = `LOADED: ${file.name} (${Math.round(file.size / 1024)} KB)`;
+      uploadStatus.classList.add('text-hud-cyan', 'glow-cyan');
+      addLog('SYS', `Mounted payload: ${file.name}`);
+    }
+
+    // 7. Fullscreen Toggle
+    document.getElementById('btnFullscreen').addEventListener('click', () => {
+      if (!document.fullscreenElement) {
+        document.documentElement.requestFullscreen().catch(() => {});
+      } else {
+        document.exitFullscreen().catch(() => {});
+      }
+    });
+
+    // Close button warning
+    document.getElementById('btnCloseApp').addEventListener('click', () => {
+      addLog('ERR', 'Terminal shutdown requested. Standing by.');
+    });
+  </script>
+<!-- END: LogicAndWireframeScripts -->
+
+
+</body></html>
