@@ -32,7 +32,7 @@ win = ui.MainWindow(ui.CONFIG_DIR / "nonexistent-face.png")
 try:
     ok("window icon set", not win.windowIcon().isNull())
     ok("window icon has sizes", bool(win.windowIcon().availableSizes()))
-    ok("title keeps the codename", "MARK LIV" in win.windowTitle(),
+    ok("title keeps the version", ui.APP_VERSION in win.windowTitle(),
        repr(win.windowTitle()))
     ok("icon is not the null fallback", "zara" in str(ui.ICON_PNG).lower())
 finally:

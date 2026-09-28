@@ -1,7 +1,7 @@
 <!DOCTYPE html><html lang="en" rtrvr-gl-keydown="1" rtrvr-gl-click="1" rtrvr-gl-input="1" rtrvr-mw-ready="1" rtrvr-mw-busy="0" rtrvr-ls="0~hs,5~hs,6~hs,8~hs,9~hs,12~hs,13~hs,15~hs,23~hs,24~hs" style=""><head>
 <meta charset="utf-8">
 <meta content="width=device-width, initial-scale=1.0" name="viewport">
-<title>ZARA — MARK LIV | Cybernetic Assistant HUD</title>
+<title>ZARA | Cybernetic Assistant HUD</title>
 <!-- Tailwind CSS v3 -->
 <script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
 <!-- Google Fonts for Tactical HUD Interface -->
@@ -353,7 +353,7 @@
 <div class="text-hud-red glow-red">[ERR]: API key invalid — please verify key.</div>
 <div class="text-cyan-300">[SYS]: Initialised. OS=WINDOWS. ZARA online.</div>
 <div class="text-hud-amber">[AUTH]: Standby for Gemini API Key authentication.</div>
-<div class="text-cyan-400/80">[NET]: Mark LIV Protocol listening on port 8080.</div>
+<div class="text-cyan-400/80">[NET]: Assistant protocol listening on port 8080.</div>
 </div>
 </div>
 <!-- FILE UPLOAD DROPZONE -->
@@ -595,7 +595,7 @@
         return;
       }
       authErrorMsg.classList.add('hidden');
-      addLog('AUTH', 'Authenticating Mark LIV Neural Link...');
+      addLog('AUTH', 'Authenticating Neural Link...');
 
       setTimeout(() => {
         addLog('SUCCESS', 'Gemini Neural API verified. Access granted.');
@@ -654,7 +654,7 @@
       addLog('INFO', `User query: "${q}"`);
       cmdInput.value = '';
       setTimeout(() => {
-        addLog('SUCCESS', `ZARA: Query parsed. Mark LIV response synthesized.`);
+        addLog('SUCCESS', `ZARA: Query parsed. Response synthesized.`);
       }, 500);
     }
 

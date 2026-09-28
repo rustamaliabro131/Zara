@@ -17,8 +17,8 @@ WHY NAMES, NOT INDICES
 
 WHY THIS IS CACHED
     `sd.query_devices()` talks to the host audio API and can take a few hundred
-    milliseconds on a Windows machine with many endpoints. Mark LV learned this
-    lesson the expensive way — a 2.1-second `openwakeword` import on the Qt
+    milliseconds on a Windows machine with many endpoints. This was learned the
+    expensive way — a 2.1-second `openwakeword` import on the Qt
     thread made the settings drawer look like it was broken. So the list is
     fetched once on a background thread at startup and served from cache.
 """

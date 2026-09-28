@@ -46,23 +46,30 @@ def is_legacy_name(name: str | None) -> bool:
 
 
 # ── Official credits ────────────────────────────────────────────────────────
-# Requested branding, shown in the header and the footer. The developer and
-# studio are separated so a longer credit block can compose from the same parts
-# instead of hard-coding the whole string a second time.
+# Shown in the header, the footer and the About panel. The developer and studio
+# are separate parts so a longer credit block can compose from the same values
+# instead of hard-coding the whole string a second time. STUDIO is optional —
+# leave it empty to credit the developer on their own.
 DEVELOPER = "Rustam"
-STUDIO    = "Ex-KWK Creatives"
+STUDIO    = ""
 
-CREDITS         = f"Developed by {DEVELOPER} | {STUDIO}"
-CREDITS_SHORT   = f"{DEVELOPER} · {STUDIO}"
-CREDITS_COMPACT = f"{DEVELOPER}/{STUDIO}"
+
+def _credit(sep: str) -> str:
+    """Join the credit parts that are actually set, skipping empty ones."""
+    return sep.join(p for p in (DEVELOPER, STUDIO) if p)
+
+
+CREDITS         = f"Developed by {_credit(' | ')}"
+CREDITS_SHORT   = _credit(" · ")
+CREDITS_COMPACT = _credit("/")
 
 
 # ── Release name ────────────────────────────────────────────────────────────
-# The product codename. The window title, the header badge, the dashboard and
+# The release identifier. The window title, the header badge, the dashboard and
 # the readme all read it from here, which is the only reason they can be
 # trusted to agree.
-APP_VERSION  = "MARK LIV"
-APP_PROTOCOL = APP_VERSION.split()[-1]
+APP_VERSION  = "1.0.0"
+APP_PROTOCOL = APP_VERSION
 
 
 # ── Voice ───────────────────────────────────────────────────────────────────
