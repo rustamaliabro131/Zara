@@ -1,16 +1,19 @@
-# ── What never belongs in the repository ─────────────────────────────────────
+# ── Rustam LV — what never belongs in the repository ──────────────────────────
 # Everything listed here is created by the app on first run. A fresh clone with
 # none of it present boots straight to the setup screen, which is the intended
 # first experience — so nothing here needs to be committed, and some of it must
 # never be.
 
 # ── Secrets. Committing any of these publishes them. ──────────────────────────
+# NOTE: keep explanations on their own line above the pattern. Git does not
+# support trailing comments -- a line like `foo.json  # why` makes the whole
+# line the pattern, so the file stops being ignored.
 # your Gemini API key, plus per-plugin credentials
 config/api_keys.json
 # the dashboard's TLS private key and certificate
 config/certs/
-# a LINKED WhatsApp session — committing it hands
-# somebody your WhatsApp account, not just a key
+# a LINKED WhatsApp session -- committing it hands somebody your WhatsApp
+# account, not just a key
 config/whatsapp_web/
 # Google OAuth tokens (Gmail / Calendar plugins)
 **/token*.json
