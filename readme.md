@@ -396,4 +396,4 @@ Licensed under **[Creative Commons BY-NC 4.0](https://creativecommons.org/licens
 
 ## 👤 Credits
 
-Engineered by **Rustam**.
+Developed by Rustam Ali
