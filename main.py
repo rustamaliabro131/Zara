@@ -170,7 +170,16 @@ from core.viseme               import VisemeStream
 from core.wake_word            import (
     WakeWordDetector, is_ready as wake_is_ready, install_and_download as wake_install,
 )
-from skills.whatsapp_call_assistant import start_call_listener
+# Optional: the WhatsApp call answering skill. It is tracked in the repo, but a
+# clone where it is missing (or a partially-copied install) must still start --
+# an unguarded import here took the whole app down before the window appeared,
+# which reads to the user as "main.py opens and immediately closes". Signalling
+# "unavailable" lets the rest of Zara run and _start_call_listener log why.
+try:
+    from skills.whatsapp_call_assistant import start_call_listener
+except Exception as _call_import_err:      # pragma: no cover - environment dependent
+    start_call_listener = None
+    print(f"[{ASSISTANT_NAME.upper()}] WhatsApp call listener not available: {_call_import_err}")
 
 # The offline voice — EdgeTTS, Kokoro, Gemini, ElevenLabs — speaks from whichever
 # tool asked for it and holds no reference to this module, so it cannot reach
@@ -1113,6 +1122,9 @@ class ZaraLive:
     # callbacks are safe because emit_avatar_state documents itself as such.
 
     def _start_call_listener(self) -> None:
+        if start_call_listener is None:
+            self._calls = None
+            return
         try:
             self._calls = start_call_listener(
                 on_state=emit_avatar_state,
@@ -2982,5 +2994,41 @@ def main():
     threading.Thread(target=runner, daemon=True).start()
     ui.root.mainloop()
 
+
+def _report_startup_failure(exc: BaseException) -> None:
+    """Make a startup crash visible instead of a window that blinks and closes.
+
+    When this file is run by double-click, the console is a fresh window that
+    Python tears down the instant the interpreter exits -- so an exception here
+    looks like "it opened and immediately closed" with no error at all. Writing
+    the traceback to a log *next to the app* and then waiting for a keypress
+    keeps the message on screen long enough to read, which is the difference
+    between a bug report and silence.
+    """
+    tb = traceback.format_exc()
+    message = (
+        f"\n{'=' * 70}\n"
+        f"{ASSISTANT_NAME} failed to start.\n"
+        f"{'=' * 70}\n{tb}\n"
+        f"The full traceback has been written to: {BASE_DIR / 'startup_error.log'}\n"
+    )
+    print(message)
+    try:
+        (BASE_DIR / "startup_error.log").write_text(message, encoding="utf-8")
+    except Exception:
+        pass
+    # Only pause when someone is actually looking at a console. A redirected
+    # stdin (service, CI, pythonw) must not hang forever waiting for a key.
+    try:
+        if sys.stdin and sys.stdin.isatty():
+            input("\nPress Enter to close...")
+    except Exception:
+        pass
+
+
 if __name__ == "__main__":
-    main()
+    try:
+        main()
+    except Exception:
+        _report_startup_failure(sys.exc_info()[1])
+        raise

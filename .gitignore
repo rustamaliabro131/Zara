@@ -28,6 +28,11 @@ config/whatsapp_web/
 # worth carrying a credential for. Search now reads its key from
 # config/api_keys.json via actions/web_search.py.
 skills/*.py
+# EXCEPTION: main.py imports this one at startup ("from skills.whatsapp_call_assistant
+# import start_call_listener"). It holds no key of its own -- it reads
+# config/api_keys.json like the rest of the app -- and with it ignored a fresh
+# clone died on import before the window ever appeared. So it is tracked.
+!skills/whatsapp_call_assistant.py
 
 # ── Personal data the assistant accumulates about you ─────────────────────────
 memory/long_term.json
