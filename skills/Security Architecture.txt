@@ -1,0 +1,16 @@
+[User: "Zara, lock my PC"] ──► Windows LockWorkStation()  ──►  Workstation locked
+        │                                                    (no PIN, no credential)
+        │  ONE WAY ─────────────────────────────────────────►  no return path
+        │
+        ▼
+[User: "Zara, unlock my PC"] ──►  Refused before any action is resolved
+        │
+        └─► "Voice unlock is disabled — enter your password at the keyboard."
+             Never prompts for a PIN, never types one, never captures one.
+
+WHY THE RETURN PATH IS MISSING
+A microphone is a broadcast channel: anything within earshot can supply a
+"spoken PIN", so a voice unlock is a lock screen with a public keypad on it.
+The old path also drove simulated keystrokes (pyautogui) at the Windows lock
+screen, which put the password on an input-injection route and in memory as a
+string. The account password stays where Windows put it — with the user.

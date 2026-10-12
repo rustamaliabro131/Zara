@@ -1,0 +1,9 @@
+[Incoming WhatsApp Call] 
+       │
+       ▼
+[UI Automation Listener] ──(Detects Call)──► [Zara GUI State: "In Call"]
+       │
+       ▼ (Clicks Answer)
+[Virtual Audio Cable (VB-Cable)]
+  ├── Zara TTS Output  ─────────────► WhatsApp Mic Input (Caller hears Zara)
+  └── WhatsApp Speaker Output ──────► Zara Speech Recognizer (Zara hears Caller)
